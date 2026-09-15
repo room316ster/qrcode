@@ -10,61 +10,80 @@
     <script src="https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
     
     <style>
-        body { 
-            /* ใส่ภาพพื้นหลังตามลิงก์ที่กำหนด */
-            background-image: url('https://lh3.googleusercontent.com/d/1Xz0dyDpDXotdZRF6QgvYzWuq2NUHadfR');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            background-repeat: no-repeat;
-            color: #1f2937; 
-            font-family: sans-serif; 
+        /* ตัวแปรสีพื้นฐาน (รองรับ Dark Mode) */
+        :root {
+            --bg-body: url('https://lh3.googleusercontent.com/d/1Xz0dyDpDXotdZRF6QgvYzWuq2NUHadfR');
+            --glass-bg: rgba(255, 255, 255, 0.92);
+            --glass-border: rgba(255, 255, 255, 0.5);
+            --text-main: #1f2937;
+            --input-bg: rgba(255, 255, 255, 0.7);
+            --input-border: #d1d5db;
         }
+
+        /* โหมดมืด (Dark Mode) */
+        body.dark-mode {
+            --glass-bg: rgba(31, 41, 55, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f3f4f6;
+            --input-bg: rgba(17, 24, 39, 0.7);
+            --input-border: #4b5563;
+        }
+
+        body { 
+            background-image: var(--bg-body);
+            background-size: cover; background-position: center; background-attachment: fixed;
+            color: var(--text-main); font-family: sans-serif; 
+            transition: color 0.3s;
+        }
+
+        .glass { 
+            background: var(--glass-bg); 
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem; 
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); 
+            padding: 2rem; 
+            transition: background 0.3s, border 0.3s;
+        }
+
+        nav { background: var(--glass-bg) !important; backdrop-filter: blur(8px); border: 1px solid var(--glass-border); transition: background 0.3s; }
+        
         .page-section { display: none; animation: fadeIn 0.3s; }
         .page-section.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
-        
-        /* ปรับกล่องให้โปร่งแสงและเบลอพื้นหลังเล็กน้อย (Glass Effect) */
-        .glass { 
-            background: rgba(255, 255, 255, 0.92); 
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            border-radius: 1rem; 
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); 
-            padding: 2rem; 
-        }
-        
         .form-section { display: none; }
         .form-section.active { display: block; animation: fadeIn 0.3s; }
-        .input-field { background: rgba(255, 255, 255, 0.7); border: 1px solid #d1d5db; color: #111827; }
-        .input-field:focus { border-color: #8b5cf6; outline: none; box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2); background: #fff;}
         
-        /* ปรับแต่งเมนูบาร์ให้โปร่งแสงเข้ากับพื้นหลัง */
-        nav {
-            background: rgba(255, 255, 255, 0.92) !important;
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-        }
+        .input-field { background: var(--input-bg); border: 1px solid var(--input-border); color: var(--text-main); }
+        .input-field:focus { border-color: #8b5cf6; outline: none; box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2); }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+        
+        /* ปุ่มไมค์ */
+        .mic-btn { position: absolute; right: 10px; top: 10px; color: #8b5cf6; cursor: pointer; transition: 0.2s; }
+        .mic-btn:hover { color: #6d28d9; transform: scale(1.1); }
+        .mic-active { color: #ef4444; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <!-- หน้า Application หลัก (แสดงเป็นค่าเริ่มต้น) -->
     <div id="pageApp" class="page-section active flex-grow p-4 md:p-8">
-        <nav class="flex justify-between items-center mb-8 bg-white p-4 rounded-xl shadow">
-            <div class="font-bold text-xl"><i class="fas fa-qrcode text-purple-600 mr-2"></i>QR Pro</div>
+        <nav class="flex justify-between items-center mb-8 p-4 rounded-xl shadow">
+            <div class="font-bold text-xl flex items-center">
+                <i class="fas fa-qrcode text-purple-600 mr-2"></i>QR Pro
+                <!-- ปุ่มสลับโหมดมืด -->
+                <button id="btnDarkMode" class="ml-4 text-gray-400 hover:text-purple-500" title="สลับโหมดมืด"><i class="fas fa-moon"></i></button>
+            </div>
             <div class="flex space-x-4 text-sm md:text-base items-center">
                 <button onclick="switchTab('Generator')" class="font-medium hover:text-purple-600">สร้าง QR</button>
                 <button onclick="switchTab('Dashboard')" class="font-medium hover:text-purple-600"><i class="fas fa-lock text-xs mr-1"></i>สถิติ</button>
-                <button onclick="switchTab('Bulk')" class="font-medium hover:text-purple-600"><i class="fas fa-lock text-xs mr-1"></i>กลุ่ม (Bulk)</button>
+                <button onclick="switchTab('Bulk')" class="font-medium hover:text-purple-600"><i class="fas fa-lock text-xs mr-1"></i>กลุ่ม</button>
                 
-                <!-- ปุ่มสลับสถานะ Login/Logout -->
-                <button id="btnNavLogin" class="font-medium text-white bg-purple-600 px-3 py-1 rounded hover:bg-purple-700 transition">เข้าสู่ระบบ</button>
+                <button id="btnNavLogin" class="font-medium text-white bg-purple-600 px-3 py-1 rounded hover:bg-purple-700">เข้าสู่ระบบ</button>
                 <button id="btnNavLogout" class="font-medium text-red-500 hover:text-red-700 hidden"><i class="fas fa-sign-out-alt"></i> ออกจากระบบ</button>
             </div>
         </nav>
 
-        <!-- โหมดสร้าง QR Code (ทุกคนใช้ได้) -->
         <div id="tabGenerator" class="tab-content grid grid-cols-1 md:grid-cols-2 gap-8">
             <div class="glass">
                 <h2 class="text-xl font-bold mb-4"><i class="fas fa-edit mr-2"></i>ข้อมูล & ตั้งค่า</h2>
@@ -81,10 +100,15 @@
                     <option value="phone">📞 โทรศัพท์</option>
                 </select>
 
-                <!-- Forms (นำกลับมาทั้งหมด) -->
                 <div id="formContainer" class="mb-4">
-                    <div id="urlForm" class="form-section active"><input type="url" id="urlInput" placeholder="https://..." class="w-full p-3 rounded-lg input-field"></div>
-                    <div id="textForm" class="form-section"><textarea id="textInput" placeholder="ใส่ข้อความ" class="w-full p-3 rounded-lg input-field" rows="3"></textarea></div>
+                    <div id="urlForm" class="form-section active relative">
+                        <input type="url" id="urlInput" placeholder="https://..." class="w-full p-3 rounded-lg input-field pr-10">
+                        <i class="fas fa-microphone mic-btn" onclick="startDictation('urlInput')"></i>
+                    </div>
+                    <div id="textForm" class="form-section relative">
+                        <textarea id="textInput" placeholder="ใส่ข้อความ (กดปุ่มไมค์เพื่อพูดได้)" class="w-full p-3 rounded-lg input-field pr-10" rows="3"></textarea>
+                        <i class="fas fa-microphone mic-btn" onclick="startDictation('textInput')"></i>
+                    </div>
                     
                     <div id="vcardForm" class="form-section space-y-3">
                         <div class="grid grid-cols-2 gap-2">
@@ -126,11 +150,10 @@
                     <div id="phoneForm" class="form-section"><input type="tel" id="phoneInput" placeholder="เบอร์โทรศัพท์" class="w-full p-3 rounded-lg input-field"></div>
                 </div>
                 
-                <!-- การแทรกโลโก้ -->
                 <div class="mb-4">
-                    <label class="block mb-2 text-sm font-bold"><i class="fas fa-image mr-2"></i>แทรกโลโก้ตรงกลาง (ถ้ามี)</label>
+                    <label class="block mb-2 text-sm font-bold"><i class="fas fa-image mr-2"></i>แทรกโลโก้</label>
                     <div class="flex items-center space-x-2">
-                        <input type="file" id="logoUpload" accept="image/png, image/jpeg" class="text-sm file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-purple-100 file:text-purple-700 w-full input-field p-1 rounded">
+                        <input type="file" id="logoUpload" accept="image/png, image/jpeg" class="w-full input-field p-1 rounded text-sm">
                         <button id="clearLogoBtn" class="bg-red-500 p-2 rounded text-white hidden"><i class="fas fa-times"></i></button>
                     </div>
                 </div>
@@ -150,13 +173,30 @@
                     </div>
                 </div>
                 
-                <!-- Dynamic QR (เฉพาะ URL และต้องล็อกอิน) -->
-                <div class="mb-4 bg-purple-50 p-3 rounded border border-purple-200" id="dynamicWrapper">
-                    <label class="flex items-center text-sm font-bold text-purple-700">
+                <!-- Dynamic QR Options -->
+                <div class="mb-4 bg-purple-50 dark:bg-gray-800 p-3 rounded border border-purple-200 dark:border-gray-600" id="dynamicWrapper">
+                    <label class="flex items-center text-sm font-bold text-purple-700 dark:text-purple-400">
                         <input type="checkbox" id="isDynamic" class="mr-2 h-5 w-5">
-                        <i class="fas fa-link mr-2"></i> สร้าง Dynamic QR (แก้ไขปลายทางทีหลังได้)
+                        <i class="fas fa-link mr-2"></i> สร้าง Dynamic QR
                     </label>
-                    <p class="text-xs text-purple-500 mt-1 ml-7">* สงวนสิทธิ์เฉพาะเจ้าหน้าที่ (ต้องเข้าสู่ระบบ)</p>
+                    
+                    <!-- ส่วนขยายสำหรับแอดมิน (กลุ่มงาน & วันหมดอายุ) -->
+                    <div id="dynamicOptions" class="hidden mt-3 pl-7 space-y-3">
+                        <div>
+                            <label class="block text-xs font-bold mb-1">อ้างอิงกลุ่มงาน</label>
+                            <select id="dynDepartment" class="w-full p-2 rounded input-field text-sm">
+                                <option value="ทั่วไป">ทั่วไป (General)</option>
+                                <option value="งานรับฟ้อง">งานรับฟ้อง</option>
+                                <option value="งานไกล่เกลี่ย">งานไกล่เกลี่ย</option>
+                                <option value="งานคลัง">งานคลัง</option>
+                                <option value="หน้าบัลลังก์">หน้าบัลลังก์</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold mb-1">วันหมดอายุ (เว้นว่างได้หากไม่จำกัด)</label>
+                            <input type="date" id="dynExpiry" class="w-full p-2 rounded input-field text-sm">
+                        </div>
+                    </div>
                 </div>
 
                 <button id="btnGenerate" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded mt-2 transition shadow-lg"><i class="fas fa-magic mr-2"></i> สร้าง QR Code</button>
@@ -164,33 +204,33 @@
 
             <div class="glass flex flex-col items-center justify-center">
                 <h2 class="text-xl font-bold mb-4 w-full text-left">ผลลัพธ์</h2>
-                <div id="qrCanvas" class="bg-gray-50 border p-4 rounded-xl shadow-inner min-h-[300px] flex items-center justify-center w-full">
-                    <p class="text-gray-400"><i class="fas fa-qrcode text-4xl mb-2 block text-center"></i>รอการสร้าง...</p>
+                <div id="qrCanvas" class="input-field p-4 rounded-xl shadow-inner min-h-[300px] flex items-center justify-center w-full">
+                    <p class="opacity-50"><i class="fas fa-qrcode text-4xl mb-2 block text-center"></i>รอการสร้าง...</p>
                 </div>
                 <div id="qrActions" class="mt-4 hidden flex w-full space-x-2">
-                    <button id="btnDownload" class="flex-1 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded font-bold transition"><i class="fas fa-download mr-1"></i> ดาวน์โหลด</button>
-                    <button id="btnPrint" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded font-bold transition"><i class="fas fa-print mr-1"></i> พิมพ์</button>
+                    <button id="btnDownload" class="flex-1 bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded font-bold transition text-sm"><i class="fas fa-image mr-1"></i> โหลด PNG</button>
+                    <!-- ปุ่มโหลด SVG (ภาพ Vector) -->
+                    <button id="btnDownloadSvg" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded font-bold transition text-sm"><i class="fas fa-vector-square mr-1"></i> โหลด SVG</button>
+                    <button id="btnPrint" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded font-bold transition text-sm"><i class="fas fa-print mr-1"></i> พิมพ์</button>
                 </div>
             </div>
         </div>
 
-        <!-- โหมด Dashboard (ต้องล็อกอิน) -->
         <div id="tabDashboard" class="tab-content hidden glass">
             <h2 class="text-2xl font-bold mb-6"><i class="fas fa-chart-pie mr-2"></i> แดชบอร์ดสรุปสถิติ</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-blue-50 p-6 rounded-xl border border-blue-200">
-                    <h3 class="text-blue-800 font-bold text-lg">Dynamic QR ทั้งหมด</h3>
-                    <p id="statDynamic" class="text-4xl font-black text-blue-600 mt-2">...</p>
+                <div class="bg-blue-50 dark:bg-gray-800 p-6 rounded-xl border border-blue-200 dark:border-gray-600">
+                    <h3 class="font-bold text-lg text-blue-600">Dynamic QR ทั้งหมด</h3>
+                    <p id="statDynamic" class="text-4xl font-black mt-2">...</p>
                 </div>
-                <div class="bg-green-50 p-6 rounded-xl border border-green-200">
-                    <h3 class="text-green-800 font-bold text-lg">ประวัติการใช้งานระบบ (Logs)</h3>
-                    <p id="statLogs" class="text-4xl font-black text-green-600 mt-2">...</p>
+                <div class="bg-green-50 dark:bg-gray-800 p-6 rounded-xl border border-green-200 dark:border-gray-600">
+                    <h3 class="font-bold text-lg text-green-600">ประวัติการใช้งาน (Logs)</h3>
+                    <p id="statLogs" class="text-4xl font-black mt-2">...</p>
                 </div>
             </div>
-            <button onclick="loadDashboard()" class="mt-6 bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"><i class="fas fa-sync-alt"></i> รีเฟรชข้อมูล</button>
+            <button onclick="loadDashboard()" class="mt-6 bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition"><i class="fas fa-sync-alt"></i> รีเฟรชข้อมูล</button>
         </div>
 
-        <!-- โหมด Bulk (ต้องล็อกอิน) -->
         <div id="tabBulk" class="tab-content hidden glass">
             <h2 class="text-xl font-bold mb-4"><i class="fas fa-layer-group mr-2"></i> สร้าง QR Code แบบกลุ่ม</h2>
             <button id="btnLoadBulk" class="bg-blue-600 text-white px-4 py-2 rounded font-bold mb-4 hover:bg-blue-700"><i class="fas fa-cloud-download-alt mr-2"></i> ดึงข้อมูลจาก Google Sheets</button>
@@ -198,23 +238,20 @@
         </div>
     </div>
 
-    <!-- หน้า Login (Popup ขึ้นมาเฉพาะตอนจำเป็น) -->
-    <div id="pageLogin" class="page-section fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <!-- Login Popup -->
+    <div id="pageLogin" class="page-section fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
         <div class="glass w-full max-w-md text-center relative">
             <button onclick="closeLogin()" class="absolute top-4 right-4 text-gray-500 hover:text-red-500"><i class="fas fa-times text-xl"></i></button>
             <i class="fas fa-user-shield text-5xl text-purple-600 mb-4"></i>
             <h1 class="text-2xl font-bold mb-2">เจ้าหน้าที่ระบบ</h1>
-            <p class="text-gray-500 mb-6 text-sm">กรุณาเข้าสู่ระบบเพื่อใช้งานฟีเจอร์นี้</p>
-            <input type="text" id="loginUsername" placeholder="ชื่อผู้ใช้งาน (admin)" class="w-full p-3 border rounded mb-4 focus:outline-none focus:ring-2 focus:ring-purple-500">
-            <input type="password" id="loginPassword" placeholder="รหัสผ่าน (123456)" class="w-full p-3 border rounded mb-6 focus:outline-none focus:ring-2 focus:ring-purple-500">
+            <p class="opacity-70 mb-6 text-sm">กรุณาเข้าสู่ระบบเพื่อใช้งานฟีเจอร์นี้</p>
+            <input type="text" id="loginUsername" placeholder="ชื่อผู้ใช้งาน" class="w-full p-3 border rounded mb-4 input-field">
+            <input type="password" id="loginPassword" placeholder="รหัสผ่าน" class="w-full p-3 border rounded mb-6 input-field">
             <button id="btnLogin" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded transition">เข้าสู่ระบบ</button>
         </div>
     </div>
 
     <script>
-        // ==========================================
-        // URL ของ Web App จาก Google Apps Script
-        // ==========================================
         const API_URL = "https://script.google.com/macros/s/AKfycbx0eE9MmRHQCoWoUfxbHmd1BRP-XoGGTY6TsrdBX0Yadgtogd6TgD5V4BfbGVh3TmxD/exec"; 
 
         let currentUser = null;
@@ -241,9 +278,47 @@
             }
         }
 
+        // --- Dark Mode Toggle ---
+        document.getElementById('btnDarkMode').addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const icon = document.body.classList.contains('dark-mode') ? 'fa-sun' : 'fa-moon';
+            document.getElementById('btnDarkMode').innerHTML = `<i class="fas ${icon}"></i>`;
+        });
+
+        // --- ระบบ Speech-to-Text (พิมพ์ด้วยเสียง) ---
+        function startDictation(targetInputId) {
+            if (window.hasOwnProperty('webkitSpeechRecognition') || window.hasOwnProperty('SpeechRecognition')) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                const recognition = new SpeechRecognition();
+                
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = "th-TH"; // รองรับภาษาไทย
+
+                const targetElement = document.getElementById(targetInputId);
+                const micIcon = targetElement.nextElementSibling;
+                micIcon.classList.add('mic-active');
+
+                recognition.start();
+
+                recognition.onresult = function(e) {
+                    targetElement.value = e.results[0][0].transcript;
+                    recognition.stop();
+                    micIcon.classList.remove('mic-active');
+                };
+
+                recognition.onerror = function(e) {
+                    recognition.stop();
+                    micIcon.classList.remove('mic-active');
+                    Swal.fire({icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถรับเสียงได้ กรุณาอนุญาตการใช้ไมโครโฟน', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000});
+                }
+            } else {
+                Swal.fire({icon: 'info', title: 'ไม่รองรับฟีเจอร์นี้', text: 'เบราว์เซอร์ของคุณไม่รองรับการพิมพ์ด้วยเสียง (แนะนำให้ใช้ Chrome หรือ Edge)'});
+            }
+        }
+
         // --- ระบบ UI & การนำทาง ---
         function switchTab(tabName) {
-            // ตรวจสอบสิทธิ์สำหรับ Dashboard และ Bulk
             if ((tabName === 'Dashboard' || tabName === 'Bulk') && !currentUser) {
                 intendedTab = tabName;
                 document.getElementById('pageLogin').classList.add('active');
@@ -258,244 +333,8 @@
         document.getElementById('qrType').addEventListener('change', function(e) {
             document.querySelectorAll('.form-section').forEach(form => form.classList.remove('active'));
             const formId = e.target.value + 'Form';
-            if(document.getElementById(formId)) document.getElementById(formId).classList.add('active');
-            
-            // Dynamic QR อนุญาตเฉพาะประเภท URL
-            if(e.target.value === 'url') {
-                document.getElementById('dynamicWrapper').style.display = 'block';
-            } else {
-                document.getElementById('dynamicWrapper').style.display = 'none';
-                document.getElementById('isDynamic').checked = false;
-            }
-        });
+            if(document.getElementById(formId)) documentยินดีด้วยครับที่ข้อเสนอถูกใจ! 
 
-        // จัดการโลโก้
-        document.getElementById('logoUpload').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                uploadedLogo = event.target.result;
-                document.getElementById('clearLogoBtn').classList.remove('hidden');
-            };
-            reader.readAsDataURL(file);
-        });
-        document.getElementById('clearLogoBtn').addEventListener('click', () => {
-            uploadedLogo = null;
-            document.getElementById('logoUpload').value = '';
-            document.getElementById('clearLogoBtn').classList.add('hidden');
-        });
+แต่เพื่อให้ผมปรับแก้โค้ดได้ตรงจุดและสมบูรณ์ที่สุด รบกวนคุณวีรยุทธช่วยวางโค้ดชุดล่าสุดที่เราคุยกันไว้ให้ดูอีกรอบ หรือระบุเพิ่มเติมว่าต้องการให้เน้นปรับในส่วนไหนเป็นพิเศษครับ? (เช่น ส่วนของการเพิ่มความเร็ว Speech-to-Text ใน Python, การจัดการข้อมูลผ่าน Google Apps Script, หรือส่วนของหน้าเว็บอินเทอร์เฟซ)
 
-        // --- ระบบ Login ---
-        document.getElementById('btnNavLogin').addEventListener('click', () => {
-            document.getElementById('pageLogin').classList.add('active');
-        });
-        
-        function closeLogin() {
-            document.getElementById('pageLogin').classList.remove('active');
-            intendedTab = null;
-        }
-
-        document.getElementById('btnLogin').addEventListener('click', async () => {
-            const user = document.getElementById('loginUsername').value;
-            const pass = document.getElementById('loginPassword').value;
-            if(!user || !pass) return Swal.fire('แจ้งเตือน', 'กรุณากรอกข้อมูลให้ครบ', 'warning');
-            
-            Swal.showLoading();
-            const res = await apiCall('login', { username: user, password: pass });
-            
-            if(res.success) {
-                currentUser = user;
-                document.getElementById('pageLogin').classList.remove('active');
-                
-                // อัปเดตเมนู
-                document.getElementById('btnNavLogin').classList.add('hidden');
-                document.getElementById('btnNavLogout').classList.remove('hidden');
-                
-                Swal.fire({icon: 'success', title: 'ยินดีต้อนรับ', text: res.name, timer: 1500, showConfirmButton: false});
-                
-                if(intendedTab) {
-                    switchTab(intendedTab);
-                    intendedTab = null;
-                }
-            } else {
-                Swal.fire('ข้อผิดพลาด', res.message, 'error');
-            }
-        });
-
-        document.getElementById('btnNavLogout').addEventListener('click', () => {
-            currentUser = null;
-            document.getElementById('btnNavLogin').classList.remove('hidden');
-            document.getElementById('btnNavLogout').classList.add('hidden');
-            switchTab('Generator'); // กลับมาหน้าแรก
-            Swal.fire({icon: 'info', title: 'ออกจากระบบแล้ว', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500});
-        });
-
-        // --- ระบบสร้าง QR Code & Data Formatting (ทำงานบนเบราว์เซอร์ 100%) ---
-        document.getElementById('btnGenerate').addEventListener('click', async () => {
-            const type = document.getElementById('qrType').value;
-            const isDynamic = document.getElementById('isDynamic').checked;
-            
-            // เช็คการล็อกอินถ้าติ๊ก Dynamic
-            if (isDynamic && !currentUser) {
-                intendedTab = null;
-                document.getElementById('pageLogin').classList.add('active');
-                Swal.fire({icon: 'info', title: 'สำหรับเจ้าหน้าที่', text: 'กรุณาเข้าสู่ระบบก่อนสร้าง Dynamic QR'});
-                return;
-            }
-
-            const dataStr = collectAndFormatData(type);
-            if(!dataStr) return; // ติด Validation ภายในฟังก์ชันแล้ว
-
-            if (isDynamic) {
-                Swal.showLoading();
-                const res = await apiCall('saveDynamic', { url: dataStr, user: currentUser });
-                if (res.success) {
-                    renderQR(res.url); // วาดภาพด้วย URL ของ Web App
-                    Swal.close();
-                } else {
-                    Swal.fire('Error', res.message, 'error');
-                }
-            } else {
-                renderQR(dataStr);
-            }
-        });
-
-        function renderQR(dataStr) {
-            const container = document.getElementById('qrCanvas');
-            container.innerHTML = '';
-            
-            const options = {
-                width: 300, height: 300, data: dataStr, margin: 5,
-                dotsOptions: { color: document.getElementById('qrColor').value, type: document.getElementById('qrDotStyle').value },
-                cornersSquareOptions: { type: "extra-rounded" },
-                imageOptions: { crossOrigin: "anonymous", margin: 10 }
-            };
-
-            // ใส่โลโก้ถ้ามี
-            if(uploadedLogo) {
-                options.image = uploadedLogo;
-                options.dotsOptions.type = 'rounded'; // บังคับจุดมนให้เข้ากับโลโก้
-            }
-
-            qrCodeObj = new QRCodeStyling(options);
-            qrCodeObj.append(container);
-            document.getElementById('qrActions').classList.remove('hidden');
-        }
-
-        // จัดการข้อมูลตามประเภท
-        function collectAndFormatData(type) {
-            try {
-                switch (type) {
-                    case 'url': 
-                        let url = document.getElementById('urlInput').value;
-                        if(!url) throw "กรุณากรอก URL";
-                        return /^https?:\/\//i.test(url) ? url : 'https://' + url;
-                    case 'text': 
-                        let txt = document.getElementById('textInput').value;
-                        if(!txt) throw "กรุณากรอกข้อความ";
-                        return txt;
-                    case 'vcard': 
-                        let fn = document.getElementById('vcFname').value;
-                        let ph = document.getElementById('vcPhone').value;
-                        if(!fn || !ph) throw "กรุณากรอกชื่อและเบอร์โทร";
-                        return `BEGIN:VCARD\nVERSION:3.0\nN:${document.getElementById('vcLname').value};${fn}\nFN:${fn} ${document.getElementById('vcLname').value}\nORG:${document.getElementById('vcOrg').value}\nTEL:${ph}\nEMAIL:${document.getElementById('vcEmail').value}\nEND:VCARD`;
-                    case 'promptpay': 
-                        let pp = document.getElementById('ppId').value;
-                        if(!pp) throw "กรุณากรอกหมายเลขพร้อมเพย์";
-                        return generatePromptPayPayload(pp, document.getElementById('ppAmount').value);
-                    case 'geo': 
-                        let lat = document.getElementById('geoLat').value;
-                        if(!lat) throw "กรุณากรอกละติจูด";
-                        return `geo:${lat},${document.getElementById('geoLng').value}`;
-                    case 'event': 
-                        let title = document.getElementById('evTitle').value;
-                        if(!title) throw "กรุณากรอกหัวข้อ";
-                        const formatDT = (dt) => dt.replace(/[-:]/g, '') + '00Z';
-                        return `BEGIN:VEVENT\nSUMMARY:${title}\nDTSTART:${formatDT(document.getElementById('evStart').value)}\nDTEND:${formatDT(document.getElementById('evEnd').value)}\nLOCATION:${document.getElementById('evLocation').value}\nEND:VEVENT`;
-                    case 'wifi': 
-                        let ssid = document.getElementById('wifiSSID').value;
-                        if(!ssid) throw "กรุณากรอกชื่อ WiFi";
-                        return `WIFI:T:${document.getElementById('wifiSecurity').value};S:${ssid};P:${document.getElementById('wifiPassword').value};;`;
-                    case 'line': 
-                        let line = document.getElementById('lineInput').value;
-                        if(!line) throw "กรุณากรอก Line ID";
-                        return `https://line.me/ti/p/${line}`;
-                    case 'phone': 
-                        let phone = document.getElementById('phoneInput').value;
-                        if(!phone) throw "กรุณากรอกเบอร์โทร";
-                        return `tel:${phone}`;
-                    default: return '';
-                }
-            } catch (err) {
-                Swal.fire({icon: 'warning', title: 'ข้อมูลไม่ครบ', text: err});
-                return null;
-            }
-        }
-
-        // อัลกอริทึมพร้อมเพย์ (ประมวลผลบนเบราว์เซอร์)
-        function generatePromptPayPayload(id, amount) {
-            let idClean = id.replace(/[^0-9]/g, '');
-            let payload = "00020101021129370016A000000677010111";
-            if (idClean.length === 10) payload += "01130066" + idClean.substring(1);
-            else if (idClean.length === 13) payload += "0213" + idClean;
-            else throw "หมายเลขพร้อมเพย์ต้องเป็นเบอร์มือถือ(10หลัก) หรือบัตรประชาชน(13หลัก)";
-            payload += "5802TH5303764";
-            if (amount && amount > 0) {
-                let amtStr = parseFloat(amount).toFixed(2).toString();
-                payload += "54" + amtStr.length.toString().padStart(2, '0') + amtStr;
-            }
-            payload += "6304";
-            
-            // คำนวณ CRC16
-            let crc = 0xFFFF;
-            for (let i = 0; i < payload.length; i++) {
-                crc ^= payload.charCodeAt(i) << 8;
-                for (let j = 0; j < 8; j++) {
-                    if ((crc & 0x8000) > 0) crc = (crc << 1) ^ 0x1021;
-                    else crc = crc << 1;
-                }
-            }
-            return payload + (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
-        }
-
-        // แอคชั่นปุ่ม
-        document.getElementById('btnDownload').addEventListener('click', () => { if(qrCodeObj) qrCodeObj.download({ extension: "png" }); });
-        document.getElementById('btnPrint').addEventListener('click', () => { window.print(); });
-
-        // --- ระบบสถิติ และ Bulk ---
-        async function loadDashboard() {
-            const stats = await apiCall('getStats');
-            document.getElementById('statDynamic').textContent = stats.totalDynamic || 0;
-            document.getElementById('statLogs').textContent = stats.totalLogs || 0;
-        }
-
-        document.getElementById('btnLoadBulk').addEventListener('click', async () => {
-            Swal.showLoading();
-            const data = await apiCall('getBulk');
-            const container = document.getElementById('bulkResults');
-            container.innerHTML = '';
-            
-            if(data && data.length > 0) {
-                data.forEach((row, index) => {
-                    if(!row[0]) return;
-                    const div = document.createElement('div');
-                    div.className = "border p-4 rounded bg-white text-center shadow-sm";
-                    container.appendChild(div);
-
-                    const bulkQr = new QRCodeStyling({ width: 120, height: 120, data: row[0], margin: 5 });
-                    bulkQr.append(div);
-                    
-                    const label = document.createElement('p');
-                    label.className = "text-xs mt-2 font-bold truncate";
-                    label.textContent = row[2] || 'QR_' + (index+1);
-                    div.appendChild(label);
-                });
-            } else {
-                container.innerHTML = '<p class="col-span-4 text-center text-gray-500">ไม่พบข้อมูลใน Google Sheets</p>';
-            }
-            Swal.close();
-        });
-    </script>
-</body>
-</html>
+ส่งโค้ดและรายละเอียดมาได้เลยครับ เดี๋ยวผมรีบจัดการปรับให้ทันที!
