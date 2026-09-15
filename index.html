@@ -310,10 +310,10 @@
                 recognition.onerror = function(e) {
                     recognition.stop();
                     micIcon.classList.remove('mic-active');
-                    Swal.fire({icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถรับเสียงได้ กรุณาอนุญาตการใช้ไมโครโฟน', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000});
+                    Swal.fire({icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถรับเสียงได้ กรุณาตรวจสอบไมโครโฟน', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000});
                 }
             } else {
-                Swal.fire({icon: 'info', title: 'ไม่รองรับฟีเจอร์นี้', text: 'เบราว์เซอร์ของคุณไม่รองรับการพิมพ์ด้วยเสียง (แนะนำให้ใช้ Chrome หรือ Edge)'});
+                Swal.fire({icon: 'info', title: 'ไม่รองรับฟีเจอร์นี้', text: 'เบราว์เซอร์ของคุณไม่รองรับการพิมพ์ด้วยเสียง (แนะนำให้ใช้ Google Chrome)'});
             }
         }
 
@@ -333,8 +333,259 @@
         document.getElementById('qrType').addEventListener('change', function(e) {
             document.querySelectorAll('.form-section').forEach(form => form.classList.remove('active'));
             const formId = e.target.value + 'Form';
-            if(document.getElementById(formId)) documentยินดีด้วยครับที่ข้อเสนอถูกใจ! 
+            if(document.getElementById(formId)) document.getElementById(formId).classList.add('active');
+            
+            // Dynamic QR อนุญาตเฉพาะประเภท URL
+            if(e.target.value === 'url') {
+                document.getElementById('dynamicWrapper').style.display = 'block';
+            } else {
+                document.getElementById('dynamicWrapper').style.display = 'none';
+                document.getElementById('isDynamic').checked = false;
+                document.getElementById('dynamicOptions').classList.add('hidden');
+            }
+        });
 
-แต่เพื่อให้ผมปรับแก้โค้ดได้ตรงจุดและสมบูรณ์ที่สุด รบกวนคุณวีรยุทธช่วยวางโค้ดชุดล่าสุดที่เราคุยกันไว้ให้ดูอีกรอบ หรือระบุเพิ่มเติมว่าต้องการให้เน้นปรับในส่วนไหนเป็นพิเศษครับ? (เช่น ส่วนของการเพิ่มความเร็ว Speech-to-Text ใน Python, การจัดการข้อมูลผ่าน Google Apps Script, หรือส่วนของหน้าเว็บอินเทอร์เฟซ)
+        // จัดการเปิด/ปิด Option ของ Dynamic QR
+        document.getElementById('isDynamic').addEventListener('change', function(e) {
+            if (e.target.checked) {
+                document.getElementById('dynamicOptions').classList.remove('hidden');
+            } else {
+                document.getElementById('dynamicOptions').classList.add('hidden');
+            }
+        });
 
-ส่งโค้ดและรายละเอียดมาได้เลยครับ เดี๋ยวผมรีบจัดการปรับให้ทันที!
+        // จัดการโลโก้
+        document.getElementById('logoUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                uploadedLogo = event.target.result;
+                document.getElementById('clearLogoBtn').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        });
+        
+        document.getElementById('clearLogoBtn').addEventListener('click', () => {
+            uploadedLogo = null;
+            document.getElementById('logoUpload').value = '';
+            document.getElementById('clearLogoBtn').classList.add('hidden');
+        });
+
+        // --- ระบบ Login ---
+        document.getElementById('btnNavLogin').addEventListener('click', () => {
+            document.getElementById('pageLogin').classList.add('active');
+        });
+        
+        function closeLogin() {
+            document.getElementById('pageLogin').classList.remove('active');
+            intendedTab = null;
+        }
+
+        document.getElementById('btnLogin').addEventListener('click', async () => {
+            const user = document.getElementById('loginUsername').value;
+            const pass = document.getElementById('loginPassword').value;
+            if(!user || !pass) return Swal.fire('แจ้งเตือน', 'กรุณากรอกข้อมูลให้ครบ', 'warning');
+            
+            Swal.showLoading();
+            const res = await apiCall('login', { username: user, password: pass });
+            
+            if(res.success) {
+                currentUser = user;
+                document.getElementById('pageLogin').classList.remove('active');
+                
+                document.getElementById('btnNavLogin').classList.add('hidden');
+                document.getElementById('btnNavLogout').classList.remove('hidden');
+                
+                Swal.fire({icon: 'success', title: 'ยินดีต้อนรับ', text: res.name, timer: 1500, showConfirmButton: false});
+                
+                if(intendedTab) {
+                    switchTab(intendedTab);
+                    intendedTab = null;
+                }
+            } else {
+                Swal.fire('ข้อผิดพลาด', res.message, 'error');
+            }
+        });
+
+        document.getElementById('btnNavLogout').addEventListener('click', () => {
+            currentUser = null;
+            document.getElementById('btnNavLogin').classList.remove('hidden');
+            document.getElementById('btnNavLogout').classList.add('hidden');
+            switchTab('Generator'); 
+            Swal.fire({icon: 'info', title: 'ออกจากระบบแล้ว', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500});
+        });
+
+        // --- ระบบสร้าง QR Code ---
+        document.getElementById('btnGenerate').addEventListener('click', async () => {
+            const type = document.getElementById('qrType').value;
+            const isDynamic = document.getElementById('isDynamic').checked;
+            
+            if (isDynamic && !currentUser) {
+                intendedTab = null;
+                document.getElementById('pageLogin').classList.add('active');
+                Swal.fire({icon: 'info', title: 'สำหรับเจ้าหน้าที่', text: 'กรุณาเข้าสู่ระบบก่อนสร้าง Dynamic QR'});
+                return;
+            }
+
+            const dataStr = collectAndFormatData(type);
+            if(!dataStr) return; 
+
+            if (isDynamic) {
+                Swal.showLoading();
+                const expiry = document.getElementById('dynExpiry').value;
+                const dept = document.getElementById('dynDepartment').value;
+                
+                const res = await apiCall('saveDynamic', { 
+                    url: dataStr, 
+                    user: currentUser,
+                    expiry: expiry,
+                    department: dept
+                });
+                
+                if (res.success) {
+                    renderQR(res.url); 
+                    Swal.close();
+                } else {
+                    Swal.fire('Error', res.message, 'error');
+                }
+            } else {
+                renderQR(dataStr);
+            }
+        });
+
+        function renderQR(dataStr) {
+            const container = document.getElementById('qrCanvas');
+            container.innerHTML = '';
+            
+            const options = {
+                width: 300, height: 300, data: dataStr, margin: 5,
+                dotsOptions: { color: document.getElementById('qrColor').value, type: document.getElementById('qrDotStyle').value },
+                cornersSquareOptions: { type: "extra-rounded" },
+                imageOptions: { crossOrigin: "anonymous", margin: 10 }
+            };
+
+            if(uploadedLogo) {
+                options.image = uploadedLogo;
+                options.dotsOptions.type = 'rounded'; 
+            }
+
+            qrCodeObj = new QRCodeStyling(options);
+            qrCodeObj.append(container);
+            document.getElementById('qrActions').classList.remove('hidden');
+        }
+
+        // จัดการข้อมูล
+        function collectAndFormatData(type) {
+            try {
+                switch (type) {
+                    case 'url': 
+                        let url = document.getElementById('urlInput').value;
+                        if(!url) throw "กรุณากรอก URL";
+                        return /^https?:\/\//i.test(url) ? url : 'https://' + url;
+                    case 'text': 
+                        let txt = document.getElementById('textInput').value;
+                        if(!txt) throw "กรุณากรอกข้อความ";
+                        return txt;
+                    case 'vcard': 
+                        let fn = document.getElementById('vcFname').value;
+                        let ph = document.getElementById('vcPhone').value;
+                        if(!fn || !ph) throw "กรุณากรอกชื่อและเบอร์โทร";
+                        return `BEGIN:VCARD\nVERSION:3.0\nN:${document.getElementById('vcLname').value};${fn}\nFN:${fn} ${document.getElementById('vcLname').value}\nORG:${document.getElementById('vcOrg').value}\nTEL:${ph}\nEMAIL:${document.getElementById('vcEmail').value}\nEND:VCARD`;
+                    case 'promptpay': 
+                        let pp = document.getElementById('ppId').value;
+                        if(!pp) throw "กรุณากรอกหมายเลขพร้อมเพย์";
+                        return generatePromptPayPayload(pp, document.getElementById('ppAmount').value);
+                    case 'geo': 
+                        let lat = document.getElementById('geoLat').value;
+                        if(!lat) throw "กรุณากรอกละติจูด";
+                        return `geo:${lat},${document.getElementById('geoLng').value}`;
+                    case 'event': 
+                        let title = document.getElementById('evTitle').value;
+                        if(!title) throw "กรุณากรอกหัวข้อ";
+                        const formatDT = (dt) => dt.replace(/[-:]/g, '') + '00Z';
+                        return `BEGIN:VEVENT\nSUMMARY:${title}\nDTSTART:${formatDT(document.getElementById('evStart').value)}\nDTEND:${formatDT(document.getElementById('evEnd').value)}\nLOCATION:${document.getElementById('evLocation').value}\nEND:VEVENT`;
+                    case 'wifi': 
+                        let ssid = document.getElementById('wifiSSID').value;
+                        if(!ssid) throw "กรุณากรอกชื่อ WiFi";
+                        return `WIFI:T:${document.getElementById('wifiSecurity').value};S:${ssid};P:${document.getElementById('wifiPassword').value};;`;
+                    case 'line': 
+                        let line = document.getElementById('lineInput').value;
+                        if(!line) throw "กรุณากรอก Line ID";
+                        return `https://line.me/ti/p/${line}`;
+                    case 'phone': 
+                        let phone = document.getElementById('phoneInput').value;
+                        if(!phone) throw "กรุณากรอกเบอร์โทร";
+                        return `tel:${phone}`;
+                    default: return '';
+                }
+            } catch (err) {
+                Swal.fire({icon: 'warning', title: 'ข้อมูลไม่ครบ', text: err});
+                return null;
+            }
+        }
+
+        // พร้อมเพย์ Payload
+        function generatePromptPayPayload(id, amount) {
+            let idClean = id.replace(/[^0-9]/g, '');
+            let payload = "00020101021129370016A000000677010111";
+            if (idClean.length === 10) payload += "01130066" + idClean.substring(1);
+            else if (idClean.length === 13) payload += "0213" + idClean;
+            else throw "หมายเลขพร้อมเพย์ต้องเป็นเบอร์มือถือ(10หลัก) หรือบัตรประชาชน(13หลัก)";
+            payload += "5802TH5303764";
+            if (amount && amount > 0) {
+                let amtStr = parseFloat(amount).toFixed(2).toString();
+                payload += "54" + amtStr.length.toString().padStart(2, '0') + amtStr;
+            }
+            payload += "6304";
+            
+            let crc = 0xFFFF;
+            for (let i = 0; i < payload.length; i++) {
+                crc ^= payload.charCodeAt(i) << 8;
+                for (let j = 0; j < 8; j++) {
+                    if ((crc & 0x8000) > 0) crc = (crc << 1) ^ 0x1021;
+                    else crc = crc << 1;
+                }
+            }
+            return payload + (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+        }
+
+        // แอคชั่นปุ่มบันทึก
+        document.getElementById('btnDownload').addEventListener('click', () => { if(qrCodeObj) qrCodeObj.download({ extension: "png" }); });
+        document.getElementById('btnDownloadSvg').addEventListener('click', () => { if(qrCodeObj) qrCodeObj.download({ extension: "svg" }); });
+        document.getElementById('btnPrint').addEventListener('click', () => { window.print(); });
+
+        // --- ระบบสถิติ และ Bulk ---
+        async function loadDashboard() {
+            const stats = await apiCall('getStats');
+            document.getElementById('statDynamic').textContent = stats.totalDynamic || 0;
+            document.getElementById('statLogs').textContent = stats.totalLogs || 0;
+        }
+
+        document.getElementById('btnLoadBulk').addEventListener('click', async () => {
+            Swal.showLoading();
+            const data = await apiCall('getBulk');
+            const container = document.getElementById('bulkResults');
+            container.innerHTML = '';
+            
+            if(data && data.length > 0) {
+                data.forEach((row, index) => {
+                    if(!row[0]) return;
+                    const div = document.createElement('div');
+                    div.className = "border p-4 rounded bg-white text-center shadow-sm";
+                    container.appendChild(div);
+
+                    const bulkQr = new QRCodeStyling({ width: 120, height: 120, data: row[0], margin: 5 });
+                    bulkQr.append(div);
+                    
+                    const label = document.createElement('p');
+                    label.className = "text-xs mt-2 font-bold truncate text-gray-800";
+                    label.textContent = row[2] || 'QR_' + (index+1);
+                    div.appendChild(label);
+                });
+            } else {
+                container.innerHTML = '<p class="col-span-4 text-center text-gray-500">ไม่พบข้อมูลใน Google Sheets</p>';
+            }
+            Swal.close();
+        });
+    </script>
