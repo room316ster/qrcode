@@ -2,6 +2,7 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enterprise QR Code Pro (GitHub Edition)</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -14,115 +15,193 @@
         .page-section.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
         .glass { background: white; border-radius: 1rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); padding: 2rem; }
+        .form-section { display: none; }
+        .form-section.active { display: block; animation: fadeIn 0.3s; }
+        .input-field { background: #f9fafb; border: 1px solid #d1d5db; color: #111827; }
+        .input-field:focus { border-color: #8b5cf6; outline: none; box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2); }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <!-- หน้า Login -->
-    <div id="pageLogin" class="page-section active flex-grow flex items-center justify-center p-4">
-        <div class="glass w-full max-w-md text-center">
-            <i class="fas fa-qrcode text-6xl text-purple-600 mb-4"></i>
-            <h1 class="text-2xl font-bold mb-6">ระบบจัดการ QR Code องค์กร</h1>
-            <input type="text" id="loginUsername" placeholder="ชื่อผู้ใช้งาน" class="w-full p-3 border rounded mb-4">
-            <input type="password" id="loginPassword" placeholder="รหัสผ่าน" class="w-full p-3 border rounded mb-6">
-            <button id="btnLogin" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded transition">เข้าสู่ระบบ</button>
-        </div>
-    </div>
-
-    <!-- หน้า Application หลัก -->
-    <div id="pageApp" class="page-section flex-grow p-4 md:p-8">
+    <!-- หน้า Application หลัก (แสดงเป็นค่าเริ่มต้น) -->
+    <div id="pageApp" class="page-section active flex-grow p-4 md:p-8">
         <nav class="flex justify-between items-center mb-8 bg-white p-4 rounded-xl shadow">
             <div class="font-bold text-xl"><i class="fas fa-qrcode text-purple-600 mr-2"></i>QR Pro</div>
-            <div class="flex space-x-4 text-sm md:text-base">
+            <div class="flex space-x-4 text-sm md:text-base items-center">
                 <button onclick="switchTab('Generator')" class="font-medium hover:text-purple-600">สร้าง QR</button>
-                <button onclick="switchTab('Dashboard')" class="font-medium hover:text-purple-600">สถิติ</button>
-                <button onclick="switchTab('Bulk')" class="font-medium hover:text-purple-600">กลุ่ม (Bulk)</button>
-                <button id="btnLogout" class="font-medium text-red-500 hover:text-red-700"><i class="fas fa-sign-out-alt"></i> ออก</button>
+                <button onclick="switchTab('Dashboard')" class="font-medium hover:text-purple-600"><i class="fas fa-lock text-xs mr-1"></i>สถิติ</button>
+                <button onclick="switchTab('Bulk')" class="font-medium hover:text-purple-600"><i class="fas fa-lock text-xs mr-1"></i>กลุ่ม (Bulk)</button>
+                
+                <!-- ปุ่มสลับสถานะ Login/Logout -->
+                <button id="btnNavLogin" class="font-medium text-white bg-purple-600 px-3 py-1 rounded hover:bg-purple-700 transition">เข้าสู่ระบบ</button>
+                <button id="btnNavLogout" class="font-medium text-red-500 hover:text-red-700 hidden"><i class="fas fa-sign-out-alt"></i> ออกจากระบบ</button>
             </div>
         </nav>
 
-        <!-- โหมดสร้าง QR Code -->
+        <!-- โหมดสร้าง QR Code (ทุกคนใช้ได้) -->
         <div id="tabGenerator" class="tab-content grid grid-cols-1 md:grid-cols-2 gap-8">
             <div class="glass">
-                <h2 class="text-xl font-bold mb-4">ตั้งค่า QR Code</h2>
-                <div class="mb-4">
-                    <label class="block mb-2 text-sm font-bold">ข้อมูล (URL หรือ ข้อความ)</label>
-                    <input type="text" id="qrData" class="w-full p-3 border rounded" placeholder="https://...">
+                <h2 class="text-xl font-bold mb-4"><i class="fas fa-edit mr-2"></i>ข้อมูล & ตั้งค่า</h2>
+                
+                <select id="qrType" class="w-full p-3 rounded-lg input-field mb-4 font-bold">
+                    <option value="url" selected>🌐 URL / Website</option>
+                    <option value="text">📝 ข้อความ (Text)</option>
+                    <option value="vcard">📇 นามบัตร (vCard)</option>
+                    <option value="promptpay">💸 พร้อมเพย์ (PromptPay)</option>
+                    <option value="geo">📍 พิกัดแผนที่ (Location)</option>
+                    <option value="event">📅 ปฏิทินนัดหมาย (Event)</option>
+                    <option value="wifi">📶 WiFi</option>
+                    <option value="line">💚 Line ID</option>
+                    <option value="phone">📞 โทรศัพท์</option>
+                </select>
+
+                <!-- Forms (นำกลับมาทั้งหมด) -->
+                <div id="formContainer" class="mb-4">
+                    <div id="urlForm" class="form-section active"><input type="url" id="urlInput" placeholder="https://..." class="w-full p-3 rounded-lg input-field"></div>
+                    <div id="textForm" class="form-section"><textarea id="textInput" placeholder="ใส่ข้อความ" class="w-full p-3 rounded-lg input-field" rows="3"></textarea></div>
+                    
+                    <div id="vcardForm" class="form-section space-y-3">
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="text" id="vcFname" placeholder="ชื่อ" class="w-full p-3 rounded-lg input-field">
+                            <input type="text" id="vcLname" placeholder="นามสกุล" class="w-full p-3 rounded-lg input-field">
+                        </div>
+                        <input type="tel" id="vcPhone" placeholder="เบอร์โทรศัพท์" class="w-full p-3 rounded-lg input-field">
+                        <input type="email" id="vcEmail" placeholder="อีเมล" class="w-full p-3 rounded-lg input-field">
+                        <input type="text" id="vcOrg" placeholder="ชื่อหน่วยงาน" class="w-full p-3 rounded-lg input-field">
+                    </div>
+
+                    <div id="promptpayForm" class="form-section space-y-3">
+                        <input type="text" id="ppId" placeholder="เบอร์มือถือ หรือ เลขบัตรประชาชน 13 หลัก" class="w-full p-3 rounded-lg input-field">
+                        <input type="number" id="ppAmount" placeholder="จำนวนเงิน (ไม่ระบุก็ได้)" class="w-full p-3 rounded-lg input-field">
+                    </div>
+
+                    <div id="geoForm" class="form-section space-y-3">
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="text" id="geoLat" placeholder="ละติจูด (เช่น 15.228)" class="w-full p-3 rounded-lg input-field">
+                            <input type="text" id="geoLng" placeholder="ลองจิจูด (เช่น 104.859)" class="w-full p-3 rounded-lg input-field">
+                        </div>
+                    </div>
+
+                    <div id="eventForm" class="form-section space-y-3">
+                        <input type="text" id="evTitle" placeholder="หัวข้อ" class="w-full p-3 rounded-lg input-field">
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="datetime-local" id="evStart" class="w-full p-2 rounded-lg input-field text-sm">
+                            <input type="datetime-local" id="evEnd" class="w-full p-2 rounded-lg input-field text-sm">
+                        </div>
+                        <input type="text" id="evLocation" placeholder="สถานที่" class="w-full p-3 rounded-lg input-field">
+                    </div>
+
+                    <div id="wifiForm" class="form-section space-y-3">
+                        <input type="text" id="wifiSSID" placeholder="ชื่อ WiFi (SSID)" class="w-full p-3 rounded-lg input-field">
+                        <input type="password" id="wifiPassword" placeholder="รหัสผ่าน" class="w-full p-3 rounded-lg input-field">
+                        <select id="wifiSecurity" class="w-full p-3 rounded-lg input-field"><option value="WPA">WPA/WPA2</option><option value="WEP">WEP</option></select>
+                    </div>
+                    <div id="lineForm" class="form-section"><input type="text" id="lineInput" placeholder="Line ID" class="w-full p-3 rounded-lg input-field"></div>
+                    <div id="phoneForm" class="form-section"><input type="tel" id="phoneInput" placeholder="เบอร์โทรศัพท์" class="w-full p-3 rounded-lg input-field"></div>
                 </div>
                 
+                <!-- การแทรกโลโก้ -->
                 <div class="mb-4">
-                    <label class="flex items-center text-sm font-bold text-blue-600">
-                        <input type="checkbox" id="isDynamic" class="mr-2 h-5 w-5">
-                        เปิดใช้งาน Dynamic QR (แก้ไขปลายทางได้)
-                    </label>
+                    <label class="block mb-2 text-sm font-bold"><i class="fas fa-image mr-2"></i>แทรกโลโก้ตรงกลาง (ถ้ามี)</label>
+                    <div class="flex items-center space-x-2">
+                        <input type="file" id="logoUpload" accept="image/png, image/jpeg" class="text-sm file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-purple-100 file:text-purple-700 w-full input-field p-1 rounded">
+                        <button id="clearLogoBtn" class="bg-red-500 p-2 rounded text-white hidden"><i class="fas fa-times"></i></button>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-bold mb-1">สีหลัก</label>
-                        <input type="color" id="qrColor" value="#000000" class="w-full h-10">
+                        <input type="color" id="qrColor" value="#000000" class="w-full h-10 border-0 rounded cursor-pointer">
                     </div>
                     <div>
                         <label class="block text-sm font-bold mb-1">สไตล์จุด</label>
-                        <select id="qrDotStyle" class="w-full p-2 border rounded">
+                        <select id="qrDotStyle" class="w-full p-2 rounded input-field">
                             <option value="square">สี่เหลี่ยม</option>
                             <option value="dots">กลม (Dots)</option>
+                            <option value="rounded">ขอบมน (Rounded)</option>
                         </select>
                     </div>
                 </div>
+                
+                <!-- Dynamic QR (เฉพาะ URL และต้องล็อกอิน) -->
+                <div class="mb-4 bg-purple-50 p-3 rounded border border-purple-200" id="dynamicWrapper">
+                    <label class="flex items-center text-sm font-bold text-purple-700">
+                        <input type="checkbox" id="isDynamic" class="mr-2 h-5 w-5">
+                        <i class="fas fa-link mr-2"></i> สร้าง Dynamic QR (แก้ไขปลายทางทีหลังได้)
+                    </label>
+                    <p class="text-xs text-purple-500 mt-1 ml-7">* สงวนสิทธิ์เฉพาะเจ้าหน้าที่ (ต้องเข้าสู่ระบบ)</p>
+                </div>
 
-                <button id="btnGenerate" class="w-full bg-purple-600 text-white font-bold py-3 rounded mt-4"><i class="fas fa-magic mr-2"></i> ประมวลผลภาพ</button>
+                <button id="btnGenerate" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded mt-2 transition shadow-lg"><i class="fas fa-magic mr-2"></i> สร้าง QR Code</button>
             </div>
 
             <div class="glass flex flex-col items-center justify-center">
                 <h2 class="text-xl font-bold mb-4 w-full text-left">ผลลัพธ์</h2>
-                <div id="qrCanvas" class="bg-white p-4 rounded-xl shadow-inner min-h-[300px] flex items-center justify-center"></div>
-                <div id="qrActions" class="mt-4 hidden">
-                    <button id="btnDownload" class="bg-green-500 text-white px-4 py-2 rounded font-bold"><i class="fas fa-download"></i> ดาวน์โหลด</button>
+                <div id="qrCanvas" class="bg-gray-50 border p-4 rounded-xl shadow-inner min-h-[300px] flex items-center justify-center w-full">
+                    <p class="text-gray-400"><i class="fas fa-qrcode text-4xl mb-2 block text-center"></i>รอการสร้าง...</p>
+                </div>
+                <div id="qrActions" class="mt-4 hidden flex w-full space-x-2">
+                    <button id="btnDownload" class="flex-1 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded font-bold transition"><i class="fas fa-download mr-1"></i> ดาวน์โหลด</button>
+                    <button id="btnPrint" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded font-bold transition"><i class="fas fa-print mr-1"></i> พิมพ์</button>
                 </div>
             </div>
         </div>
 
-        <!-- โหมด Dashboard -->
+        <!-- โหมด Dashboard (ต้องล็อกอิน) -->
         <div id="tabDashboard" class="tab-content hidden glass">
             <h2 class="text-2xl font-bold mb-6"><i class="fas fa-chart-pie mr-2"></i> แดชบอร์ดสรุปสถิติ</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-blue-100 p-6 rounded-xl border border-blue-200">
+                <div class="bg-blue-50 p-6 rounded-xl border border-blue-200">
                     <h3 class="text-blue-800 font-bold text-lg">Dynamic QR ทั้งหมด</h3>
                     <p id="statDynamic" class="text-4xl font-black text-blue-600 mt-2">...</p>
                 </div>
-                <div class="bg-green-100 p-6 rounded-xl border border-green-200">
+                <div class="bg-green-50 p-6 rounded-xl border border-green-200">
                     <h3 class="text-green-800 font-bold text-lg">ประวัติการใช้งานระบบ (Logs)</h3>
                     <p id="statLogs" class="text-4xl font-black text-green-600 mt-2">...</p>
                 </div>
             </div>
-            <button onclick="loadDashboard()" class="mt-6 bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"><i class="fas fa-sync-alt"></i> โหลดข้อมูลใหม่</button>
+            <button onclick="loadDashboard()" class="mt-6 bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"><i class="fas fa-sync-alt"></i> รีเฟรชข้อมูล</button>
         </div>
 
-        <!-- โหมด Bulk -->
+        <!-- โหมด Bulk (ต้องล็อกอิน) -->
         <div id="tabBulk" class="tab-content hidden glass">
             <h2 class="text-xl font-bold mb-4"><i class="fas fa-layer-group mr-2"></i> สร้าง QR Code แบบกลุ่ม</h2>
-            <button id="btnLoadBulk" class="bg-blue-600 text-white px-4 py-2 rounded font-bold mb-4"><i class="fas fa-cloud-download-alt"></i> โหลดข้อมูลจาก Google Sheets</button>
+            <button id="btnLoadBulk" class="bg-blue-600 text-white px-4 py-2 rounded font-bold mb-4 hover:bg-blue-700"><i class="fas fa-cloud-download-alt mr-2"></i> ดึงข้อมูลจาก Google Sheets</button>
             <div id="bulkResults" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6"></div>
+        </div>
+    </div>
+
+    <!-- หน้า Login (Popup ขึ้นมาเฉพาะตอนจำเป็น) -->
+    <div id="pageLogin" class="page-section fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="glass w-full max-w-md text-center relative">
+            <button onclick="closeLogin()" class="absolute top-4 right-4 text-gray-500 hover:text-red-500"><i class="fas fa-times text-xl"></i></button>
+            <i class="fas fa-user-shield text-5xl text-purple-600 mb-4"></i>
+            <h1 class="text-2xl font-bold mb-2">เจ้าหน้าที่ระบบ</h1>
+            <p class="text-gray-500 mb-6 text-sm">กรุณาเข้าสู่ระบบเพื่อใช้งานฟีเจอร์นี้</p>
+            <input type="text" id="loginUsername" placeholder="ชื่อผู้ใช้งาน (admin)" class="w-full p-3 border rounded mb-4 focus:outline-none focus:ring-2 focus:ring-purple-500">
+            <input type="password" id="loginPassword" placeholder="รหัสผ่าน (123456)" class="w-full p-3 border rounded mb-6 focus:outline-none focus:ring-2 focus:ring-purple-500">
+            <button id="btnLogin" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded transition">เข้าสู่ระบบ</button>
         </div>
     </div>
 
     <script>
         // ==========================================
-        // 🔴 นำ URL ของ Web App ที่ได้จาก Google Apps Script มาใส่ตรงนี้ 🔴
+        // URL ของ Web App จาก Google Apps Script
         // ==========================================
         const API_URL = "https://script.google.com/macros/s/AKfycbx0eE9MmRHQCoWoUfxbHmd1BRP-XoGGTY6TsrdBX0Yadgtogd6TgD5V4BfbGVh3TmxD/exec"; 
 
         let currentUser = null;
         let qrCodeObj = null;
+        let intendedTab = null;
+        let uploadedLogo = null;
 
-        // ฟังก์ชันตัวกลางสำหรับยิง API ไปหา Google Apps Script
+        // --- ระบบ API ---
         async function apiCall(action, payload = null) {
             try {
                 if (payload) {
                     const response = await fetch(API_URL, {
                         method: 'POST',
-                        // ส่งเป็น text/plain เพื่อหลีกเลี่ยงปัญหา CORS บน GitHub Pages
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                         body: JSON.stringify({ action: action, ...payload })
                     });
@@ -132,19 +211,65 @@
                     return await response.json();
                 }
             } catch (error) {
-                console.error("API Error:", error);
                 return { success: false, message: "ไม่สามารถเชื่อมต่อฐานข้อมูลได้" };
             }
         }
 
-        // ระบบสลับหน้า
+        // --- ระบบ UI & การนำทาง ---
         function switchTab(tabName) {
+            // ตรวจสอบสิทธิ์สำหรับ Dashboard และ Bulk
+            if ((tabName === 'Dashboard' || tabName === 'Bulk') && !currentUser) {
+                intendedTab = tabName;
+                document.getElementById('pageLogin').classList.add('active');
+                return;
+            }
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById('tab' + tabName).classList.remove('hidden');
             if(tabName === 'Dashboard') loadDashboard();
         }
 
-        // ระบบ Login ด้วย fetch
+        // การจัดการหน้าฟอร์ม
+        document.getElementById('qrType').addEventListener('change', function(e) {
+            document.querySelectorAll('.form-section').forEach(form => form.classList.remove('active'));
+            const formId = e.target.value + 'Form';
+            if(document.getElementById(formId)) document.getElementById(formId).classList.add('active');
+            
+            // Dynamic QR อนุญาตเฉพาะประเภท URL
+            if(e.target.value === 'url') {
+                document.getElementById('dynamicWrapper').style.display = 'block';
+            } else {
+                document.getElementById('dynamicWrapper').style.display = 'none';
+                document.getElementById('isDynamic').checked = false;
+            }
+        });
+
+        // จัดการโลโก้
+        document.getElementById('logoUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                uploadedLogo = event.target.result;
+                document.getElementById('clearLogoBtn').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        });
+        document.getElementById('clearLogoBtn').addEventListener('click', () => {
+            uploadedLogo = null;
+            document.getElementById('logoUpload').value = '';
+            document.getElementById('clearLogoBtn').classList.add('hidden');
+        });
+
+        // --- ระบบ Login ---
+        document.getElementById('btnNavLogin').addEventListener('click', () => {
+            document.getElementById('pageLogin').classList.add('active');
+        });
+        
+        function closeLogin() {
+            document.getElementById('pageLogin').classList.remove('active');
+            intendedTab = null;
+        }
+
         document.getElementById('btnLogin').addEventListener('click', async () => {
             const user = document.getElementById('loginUsername').value;
             const pass = document.getElementById('loginPassword').value;
@@ -156,71 +281,176 @@
             if(res.success) {
                 currentUser = user;
                 document.getElementById('pageLogin').classList.remove('active');
-                document.getElementById('pageApp').classList.add('active');
-                Swal.fire({icon: 'success', title: 'ยินดีต้อนรับ', text: res.name, timer: 1500});
+                
+                // อัปเดตเมนู
+                document.getElementById('btnNavLogin').classList.add('hidden');
+                document.getElementById('btnNavLogout').classList.remove('hidden');
+                
+                Swal.fire({icon: 'success', title: 'ยินดีต้อนรับ', text: res.name, timer: 1500, showConfirmButton: false});
+                
+                if(intendedTab) {
+                    switchTab(intendedTab);
+                    intendedTab = null;
+                }
             } else {
                 Swal.fire('ข้อผิดพลาด', res.message, 'error');
             }
         });
 
-        document.getElementById('btnLogout').addEventListener('click', () => {
+        document.getElementById('btnNavLogout').addEventListener('click', () => {
             currentUser = null;
-            document.getElementById('pageApp').classList.remove('active');
-            document.getElementById('pageLogin').classList.add('active');
+            document.getElementById('btnNavLogin').classList.remove('hidden');
+            document.getElementById('btnNavLogout').classList.add('hidden');
+            switchTab('Generator'); // กลับมาหน้าแรก
+            Swal.fire({icon: 'info', title: 'ออกจากระบบแล้ว', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500});
         });
 
-        // ระบบสร้าง QR
+        // --- ระบบสร้าง QR Code & Data Formatting (ทำงานบนเบราว์เซอร์ 100%) ---
         document.getElementById('btnGenerate').addEventListener('click', async () => {
-            const dataInput = document.getElementById('qrData').value;
+            const type = document.getElementById('qrType').value;
             const isDynamic = document.getElementById('isDynamic').checked;
             
-            if(!dataInput) return Swal.fire('แจ้งเตือน', 'กรุณากรอกข้อมูล', 'warning');
+            // เช็คการล็อกอินถ้าติ๊ก Dynamic
+            if (isDynamic && !currentUser) {
+                intendedTab = null;
+                document.getElementById('pageLogin').classList.add('active');
+                Swal.fire({icon: 'info', title: 'สำหรับเจ้าหน้าที่', text: 'กรุณาเข้าสู่ระบบก่อนสร้าง Dynamic QR'});
+                return;
+            }
 
-            if(isDynamic) {
+            const dataStr = collectAndFormatData(type);
+            if(!dataStr) return; // ติด Validation ภายในฟังก์ชันแล้ว
+
+            if (isDynamic) {
                 Swal.showLoading();
-                const res = await apiCall('saveDynamic', { url: dataInput, user: currentUser });
+                const res = await apiCall('saveDynamic', { url: dataStr, user: currentUser });
                 if (res.success) {
-                    renderAdvancedQR(res.url); // res.url คือลิงก์ Web App + ?id=
+                    renderQR(res.url); // วาดภาพด้วย URL ของ Web App
                     Swal.close();
+                } else {
+                    Swal.fire('Error', res.message, 'error');
                 }
             } else {
-                renderAdvancedQR(dataInput);
+                renderQR(dataStr);
             }
         });
 
-        function renderAdvancedQR(dataStr) {
+        function renderQR(dataStr) {
             const container = document.getElementById('qrCanvas');
             container.innerHTML = '';
             
-            qrCodeObj = new QRCodeStyling({
-                width: 300, height: 300, data: dataStr, margin: 10,
+            const options = {
+                width: 300, height: 300, data: dataStr, margin: 5,
                 dotsOptions: { color: document.getElementById('qrColor').value, type: document.getElementById('qrDotStyle').value },
-                cornersSquareOptions: { type: "extra-rounded" }
-            });
+                cornersSquareOptions: { type: "extra-rounded" },
+                imageOptions: { crossOrigin: "anonymous", margin: 10 }
+            };
 
+            // ใส่โลโก้ถ้ามี
+            if(uploadedLogo) {
+                options.image = uploadedLogo;
+                options.dotsOptions.type = 'rounded'; // บังคับจุดมนให้เข้ากับโลโก้
+            }
+
+            qrCodeObj = new QRCodeStyling(options);
             qrCodeObj.append(container);
             document.getElementById('qrActions').classList.remove('hidden');
         }
 
-        document.getElementById('btnDownload').addEventListener('click', () => {
-            if(qrCodeObj) qrCodeObj.download({ extension: "png" });
-        });
+        // จัดการข้อมูลตามประเภท
+        function collectAndFormatData(type) {
+            try {
+                switch (type) {
+                    case 'url': 
+                        let url = document.getElementById('urlInput').value;
+                        if(!url) throw "กรุณากรอก URL";
+                        return /^https?:\/\//i.test(url) ? url : 'https://' + url;
+                    case 'text': 
+                        let txt = document.getElementById('textInput').value;
+                        if(!txt) throw "กรุณากรอกข้อความ";
+                        return txt;
+                    case 'vcard': 
+                        let fn = document.getElementById('vcFname').value;
+                        let ph = document.getElementById('vcPhone').value;
+                        if(!fn || !ph) throw "กรุณากรอกชื่อและเบอร์โทร";
+                        return `BEGIN:VCARD\nVERSION:3.0\nN:${document.getElementById('vcLname').value};${fn}\nFN:${fn} ${document.getElementById('vcLname').value}\nORG:${document.getElementById('vcOrg').value}\nTEL:${ph}\nEMAIL:${document.getElementById('vcEmail').value}\nEND:VCARD`;
+                    case 'promptpay': 
+                        let pp = document.getElementById('ppId').value;
+                        if(!pp) throw "กรุณากรอกหมายเลขพร้อมเพย์";
+                        return generatePromptPayPayload(pp, document.getElementById('ppAmount').value);
+                    case 'geo': 
+                        let lat = document.getElementById('geoLat').value;
+                        if(!lat) throw "กรุณากรอกละติจูด";
+                        return `geo:${lat},${document.getElementById('geoLng').value}`;
+                    case 'event': 
+                        let title = document.getElementById('evTitle').value;
+                        if(!title) throw "กรุณากรอกหัวข้อ";
+                        const formatDT = (dt) => dt.replace(/[-:]/g, '') + '00Z';
+                        return `BEGIN:VEVENT\nSUMMARY:${title}\nDTSTART:${formatDT(document.getElementById('evStart').value)}\nDTEND:${formatDT(document.getElementById('evEnd').value)}\nLOCATION:${document.getElementById('evLocation').value}\nEND:VEVENT`;
+                    case 'wifi': 
+                        let ssid = document.getElementById('wifiSSID').value;
+                        if(!ssid) throw "กรุณากรอกชื่อ WiFi";
+                        return `WIFI:T:${document.getElementById('wifiSecurity').value};S:${ssid};P:${document.getElementById('wifiPassword').value};;`;
+                    case 'line': 
+                        let line = document.getElementById('lineInput').value;
+                        if(!line) throw "กรุณากรอก Line ID";
+                        return `https://line.me/ti/p/${line}`;
+                    case 'phone': 
+                        let phone = document.getElementById('phoneInput').value;
+                        if(!phone) throw "กรุณากรอกเบอร์โทร";
+                        return `tel:${phone}`;
+                    default: return '';
+                }
+            } catch (err) {
+                Swal.fire({icon: 'warning', title: 'ข้อมูลไม่ครบ', text: err});
+                return null;
+            }
+        }
 
-        // โหลด Dashboard
+        // อัลกอริทึมพร้อมเพย์ (ประมวลผลบนเบราว์เซอร์)
+        function generatePromptPayPayload(id, amount) {
+            let idClean = id.replace(/[^0-9]/g, '');
+            let payload = "00020101021129370016A000000677010111";
+            if (idClean.length === 10) payload += "01130066" + idClean.substring(1);
+            else if (idClean.length === 13) payload += "0213" + idClean;
+            else throw "หมายเลขพร้อมเพย์ต้องเป็นเบอร์มือถือ(10หลัก) หรือบัตรประชาชน(13หลัก)";
+            payload += "5802TH5303764";
+            if (amount && amount > 0) {
+                let amtStr = parseFloat(amount).toFixed(2).toString();
+                payload += "54" + amtStr.length.toString().padStart(2, '0') + amtStr;
+            }
+            payload += "6304";
+            
+            // คำนวณ CRC16
+            let crc = 0xFFFF;
+            for (let i = 0; i < payload.length; i++) {
+                crc ^= payload.charCodeAt(i) << 8;
+                for (let j = 0; j < 8; j++) {
+                    if ((crc & 0x8000) > 0) crc = (crc << 1) ^ 0x1021;
+                    else crc = crc << 1;
+                }
+            }
+            return payload + (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+        }
+
+        // แอคชั่นปุ่ม
+        document.getElementById('btnDownload').addEventListener('click', () => { if(qrCodeObj) qrCodeObj.download({ extension: "png" }); });
+        document.getElementById('btnPrint').addEventListener('click', () => { window.print(); });
+
+        // --- ระบบสถิติ และ Bulk ---
         async function loadDashboard() {
             const stats = await apiCall('getStats');
             document.getElementById('statDynamic').textContent = stats.totalDynamic || 0;
             document.getElementById('statLogs').textContent = stats.totalLogs || 0;
         }
 
-        // โหลดข้อมูล Bulk
         document.getElementById('btnLoadBulk').addEventListener('click', async () => {
             Swal.showLoading();
             const data = await apiCall('getBulk');
             const container = document.getElementById('bulkResults');
             container.innerHTML = '';
             
-            if(data.length > 0) {
+            if(data && data.length > 0) {
                 data.forEach((row, index) => {
                     if(!row[0]) return;
                     const div = document.createElement('div');
